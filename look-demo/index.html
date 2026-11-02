@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>露可 LOOK · 可运作 Demo（视觉=设计稿原图）</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif}
+body{min-height:100vh;background:linear-gradient(135deg,#232326,#161618);display:flex;align-items:center;justify-content:center;gap:36px;padding:24px;flex-wrap:wrap}
+.phone{width:390px;height:812px;background:#000;border-radius:54px;padding:10px;box-shadow:0 40px 90px rgba(0,0,0,.6);position:relative;flex-shrink:0}
+.screen{width:100%;height:100%;border-radius:44px;overflow:hidden;background:#fff;position:relative}
+.viewport{position:absolute;inset:0;overflow:hidden}
+.page{position:absolute;inset:0;opacity:0;pointer-events:none;transition:opacity .22s;overflow-y:auto;overflow-x:hidden;background:#fff}
+.page::-webkit-scrollbar{width:0}
+.page.on{opacity:1;pointer-events:auto}
+.page .bg{width:100%;display:block}
+/* 热区 */
+.hz{position:absolute;cursor:pointer;border-radius:8px;background:transparent}
+.debug .hz{outline:1.5px dashed rgba(246,88,69,.75);background:rgba(246,88,69,.08)}
+/* 动态覆盖 */
+.toast{position:absolute;left:50%;bottom:110px;transform:translateX(-50%) translateY(14px);background:rgba(30,30,30,.9);color:#fff;padding:10px 18px;border-radius:22px;font-size:12.5px;opacity:0;transition:.28s;z-index:300;max-width:84%;text-align:center;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%)}
+.mask{position:absolute;inset:0;background:rgba(0,0,0,.42);opacity:0;pointer-events:none;transition:.22s;z-index:190}
+.mask.show{opacity:1;pointer-events:auto}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:22px 22px 0 0;padding:16px 18px 30px;transform:translateY(105%);transition:transform .3s cubic-bezier(.2,.8,.3,1);z-index:200;max-height:70%;overflow-y:auto}
+.sheet.show{transform:none}
+.sheet h3{font-size:16px;font-weight:700;margin-bottom:12px;text-align:center}
+.btn{width:100%;border:none;border-radius:14px;padding:13px;font-size:15px;font-weight:600;cursor:pointer;background:#F0523F;color:#fff;margin-top:12px}
+.btn.ghost{background:#eee;color:#555}
+.optrow{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.opt{padding:8px 15px;border-radius:12px;background:#f4f4f5;font-size:13px;cursor:pointer}
+.opt.sel{background:#F0523F;color:#fff}
+/* 颜色选择器 */
+.crow{display:flex;justify-content:center;gap:10px;margin:10px 0}
+.cd{width:26px;height:26px;border-radius:50%;cursor:pointer;border:2px solid transparent}
+.cd.sel{border-color:#F0523F;transform:scale(1.15)}
+.seg{display:flex;justify-content:center;gap:10px;margin-bottom:8px}
+.seg span{padding:5px 18px;border-radius:16px;border:1.5px solid #ddd;font-size:12.5px;cursor:pointer}
+.seg span.sel{border-color:#F0523F;color:#F0523F;font-weight:600}
+/* 通用覆盖控件 */
+.redcheck{position:absolute;width:34px;height:34px;border-radius:50%;background:#F0523F;color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 3px 10px rgba(240,82,63,.45);z-index:60}
+.selbox{position:absolute;border:2.5px solid #F0523F;border-radius:12px;z-index:55;pointer-events:none}
+.badge{position:absolute;background:#2D5ED8;color:#fff;font-size:11px;font-weight:700;border-radius:999px;padding:3px 9px;z-index:60;cursor:pointer}
+.flybtn{position:absolute;left:50%;transform:translateX(-50%);background:#F0523F;color:#fff;border:none;border-radius:999px;padding:12px 34px;font-size:15px;font-weight:700;z-index:70;box-shadow:0 8px 22px rgba(240,82,63,.45);cursor:pointer}
+.range{position:absolute;z-index:65;-webkit-appearance:none;appearance:none;height:5px;border-radius:3px;background:#eee;outline:none}
+.range::-webkit-slider-thumb{-webkit-appearance:none;width:17px;height:17px;border-radius:50%;background:#F0523F;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.25)}
+.bubble{position:absolute;max-width:62%;padding:9px 13px;border-radius:13px;font-size:13px;line-height:1.45;z-index:65;animation:pop .25s ease}
+.bubble.me{right:12px;background:#F0523F;color:#fff;border-bottom-right-radius:3px}
+.bubble.ai{left:12px;background:#f1f1f3;color:#333;border-bottom-left-radius:3px}
+@keyframes pop{from{transform:scale(.85);opacity:0}to{transform:none;opacity:1}}
+/* 随心配卡片 */
+.swipewrap{position:absolute;overflow:hidden;border-radius:16px;z-index:50;box-shadow:0 10px 30px rgba(0,0,0,.18);touch-action:none;cursor:grab}
+.swipewrap img{position:absolute;pointer-events:none;user-select:none;-webkit-user-drag:none}
+.heart{position:absolute;font-size:64px;z-index:80;pointer-events:none;opacity:0}
+.heart.go{animation:hb .8s ease}
+@keyframes hb{0%{opacity:0;transform:scale(.4)}30%{opacity:1;transform:scale(1.15)}100%{opacity:0;transform:scale(1.4) translateY(-40px)}}
+.flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:90}
+.flash.go{animation:fl .5s ease}
+@keyframes fl{0%{opacity:0}30%{opacity:.9}100%{opacity:0}}
+.side{color:#bbb;font-size:13px;line-height:2;max-width:300px}
+.side b{color:#F57B61}
+.side code{background:#333;padding:1px 6px;border-radius:5px;color:#ffd9d3;font-size:12px}
+.toolbar button{background:#F0523F;color:#fff;border:none;border-radius:9px;font-size:12px;padding:6px 14px;cursor:pointer}
+.toolbar button.on{background:#555}
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="screen">
+    <div class="viewport" id="vp"></div>
+    <div class="mask" id="mask" onclick="closeSheet()"></div>
+    <div class="sheet" id="sheet"></div>
+    <div class="toast" id="toast"></div>
+    <div class="flash" id="flash"></div>
+  </div>
+</div>
+<div class="side">
+  <div class="toolbar" style="position:static;margin-bottom:8px;display:flex;gap:8px"><button id="dbgbtn" onclick="toggleDbg()">显示热区</button><button onclick="goto('splash')">重置</button></div>
+  <div style="font-size:15px;color:#fff;font-weight:700;margin-bottom:6px">LOOK 可运作 Demo</div>
+  <b>·</b> 每页视觉 = 你上传的高保真设计图原图（22 张，未改动）<br>
+  <b>·</b> 透明热区 = 交互点：点按钮跳转/弹层，点衣物选中上身<br>
+  <b>·</b> <span style="color:#fff">可运作的交互</span>：性别选择 → 首页金刚区四入口 → AI搭配聊天（可发消息）→ 随心配（拖卡/红心）→ 试衣间（选衣物上身）→ 数字人（身形+滑块）→ 商城（色选/数量/加购/结算）→ 消息（左滑删除/聊天回复）→ 单品详情（属性编辑/颜色选择器/穿着次数）<br>
+  <b>·</b> 右上角「显示热区」可查看所有可点击位置<br><br>
+  <span style="color:#888">热区坐标在 <code>index.html</code> 顶部 <code>HOTSPOTS</code> 中集中定义，可微调。</span>
+</div>
+
+<script>
+/* ================= 页面与热区定义 =================
+   hot: [x%, y%, w%, h%, 动作, 参数]
+   动作：nav:页 | t:提示文案 | act:函数名[:参数] */
+const PAGES={
+splash:{img:'splash.png',hot:[
+  [0,0,100,100,'nav','gender']]},
+gender:{img:'gender.png',hot:[
+  [10,31,36,17,'act',"pickGender:'女生'"],
+  [52,31,36,17,'act',"pickGender:'男生'"]]},
+home:{img:'home.png',tab:1,hot:[
+  [77,4.5,16,4,'t','天气详情（31℃ 适合穿短袖短裤、连衣裙）'],
+  [2,31,23,11,'nav','aichat'],      // 搭配生成
+  [26,31,23,11,'nav','fitting'],    // AI试衣
+  [50,31,24,11,'nav','wardrobe'],   // 我的衣橱
+  [75,31,23,11,'nav','diary'],      // 穿搭日记
+  [2,43,96,20,'t','旧衣互换 · 春日交换计划 2/25-4/25（活动页待设计）'],
+  [2,88,96,4.5,'t','总消费金额：本月新增 3 笔'],
+  ...tabhots()]},
+wardrobe:{img:'wardrobe2.png',hot:[
+  [2,1.5,8,4.5,'nav','home'],
+  [72,1.5,26,4.5,'t','筛选 / 设置 / 对比'],
+  [0,6,100,4.5,'act','pickCat'],
+  [0,11.5,24,80,'act','pickSub'],
+  [25.5,12,74.5,76,'nav','item'],
+  [86,88,12,9,'act','addSheet'],    // 红色 +
+  [2,88,84,9,'act','importTap'],    // 导入栏
+  ]},
+item:{img:'camera.png',hot:[   // 拍照.png = 编辑态单品详情（带 AI搭配/AI试衣浮钮）
+  [2,1.5,8,4.5,'nav','wardrobe'],
+  [3,11.5,15,8.5,'nav','aichat'],   // AI搭配钮
+  [3,22.5,15,8.5,'nav','fitting'],  // AI试衣钮
+  [3,35,94,6,'act',"editRow:'分类'"],
+  [3,41,94,6,'act',"editRow:'存放位置'"],
+  [3,47,94,6,'act','colorSheet'],   // 颜色 → 选择器
+  [3,52.5,94,6,'act',"seasonSheet"],// 季节
+  [3,58,94,6,'act','wearCount'],    // 穿着次数
+  [70,58,26,6,'act','wearMinus'],
+  [3,63.5,94,6,'act',"editRow:'面料'"],
+  [3,69,94,6,'act',"editRow:'价格'"],
+  [3,74.5,94,6,'act',"editRow:'购买时间'"],
+  [3,80,94,10,'act',"editRow:'备注'"],
+  ]},
+itemcolor:{img:'item.png',hot:[  // 单价.png = 颜色选择器面板
+  [2,1.5,8,4.5,'nav','item'],
+  [88,3,10,6,'t','删除单品'],
+  [82,22,14,8,'t','更换图片'],
+  [82,31,14,8,'t','编辑信息'],
+  [3,35,94,6,'act',"editRow:'分类'"],
+  [3,41,94,6,'act',"editRow:'存放位置'"],
+  [3,47,94,6,'t','颜色选择中 ↓'],
+  [3,52.5,94,6,'act','seasonSheet'],
+  [3,58,94,6,'act','wearCount'],
+  [3,63.5,94,6,'act',"editRow:'面料'"],
+  [3,69,94,6,'act',"editRow:'价格'"],
+  [2,79.5,22,5,'act',"colorTab:'主色'"],
+  [55,79.5,22,5,'act',"colorTab:'次色'"],
+  [0,83.5,100,6.5,'act','colorDot'],
+  [26,91,22,7,'nav','item'],         // 取消
+  [50,91,24,7,'act','colorDone'],    // 确定
+  ]},
+fitting:{img:'fitting.png',hot:[
+  [2,1.5,8,4.5,'nav','home'],
+  [86,57,12,6,'t','搜索衣物'],
+  [0,57.5,33,5.5,'act',"fitTab:'试单品'"],
+  [33,57.5,34,5.5,'act',"fitTab:'试搭配'"],
+  [67,57.5,33,5.5,'act',"fitTab:'试收藏'"],
+  [0,63,100,4.5,'act','fitCat'],
+  [0,67.5,50,15,'act','fitPick:0'],
+  [50,67.5,50,15,'act','fitPick:1'],
+  [0,82.5,50,15,'act','fitPick:2'],
+  [50,82.5,50,15,'act','fitPick:3'],
+  ]},
+aichat:{img:'aichat.png',hot:[
+  [3,2.5,9,5,'t','历史会话'],
+  [84,2.5,7,5,'t','语音搭配（敬请期待）'],
+  [91,2.5,7,5,'t','分享会话'],
+  [2,24,47,34,'act','favLook:1'],
+  [51,24,47,34,'act','favLook:2'],
+  [2,59,47,30,'act','favLook:3'],
+  [2,87.5,28,5.5,'nav','assist'],   // 随心配
+  [31,87.5,28,5.5,'t','打包助手：出行清单自动整理（待接入）'],
+  [0,92.5,100,7.5,'act','chatInput'],
+  ]},
+assist:{img:'assist.png',hot:[
+  [2,3.5,9,5,'nav','aichat'],
+  [30,83.5,40,7.5,'act','assistKeep'],
+  ]},
+avatar:{img:'avatar.png',hot:[
+  [2,1.5,8,4.5,'nav','home'],
+  [68,7.5,30,4.5,'t','当前身材：165cm / 55kg（点击编辑）'],
+  [76,16.5,22,6,'t','肤色调整（捏脸功能待接入）'],
+  [76,23.5,22,6,'t','发型调整（捏脸功能待接入）'],
+  [76,30.5,22,6,'t','五官调整（捏脸功能待接入）'],
+  [76,37.5,22,6,'t','妆容调整（捏脸功能待接入）'],
+  [76,44.5,22,6,'nav','avatar2'],   // 身材（红）
+  [2,54,31,15,'act','bodyPick:0'],
+  [34.5,54,31,15,'act','bodyPick:1'],
+  [67,54,31,15,'act','bodyPick:2'],
+  [2,71,31,15,'act','bodyPick:3'],
+  [34.5,71,31,15,'act','bodyPick:4'],
+  [67,71,31,15,'act','bodyPick:5'],
+  [30,88,40,6,'nav','avatar2'],
+  ]},
+avatar2:{img:'avatar2.png',hot:[
+  [2,1.5,8,4.5,'nav','avatar'],
+  [68,55,30,6,'t','↺ 撤销 / 重做 / 重置'],
+  [30,91,40,6,'act','avatarDone'],
+  ]},
+camera:{img:'camera.png',tab:1,hot:[
+  [15,30,70,40,'act','takePhoto'],
+  ...tabhots()]},
+diary:{img:'diary.png',hot:[
+  [2,1.5,8,4.5,'nav','home'],
+  [86,2,12,5,'t','切换月份 / 添加记录'],
+  [0,11,100,32,'act','calPick'],
+  [2,46,47,26,'nav','item'],
+  [51,46,47,26,'nav','item'],
+  [2,74,47,24,'nav','item'],
+  [51,74,47,24,'nav','item'],
+  ]},
+discover:{img:'discover.png',tab:1,hot:[
+  [4,2,78,5.5,'nav','search'],
+  [86,2,10,5.5,'t','发布穿搭'],
+  [0,9,14.3,6,'t','我的订单'],
+  [14.3,9,14.3,6,'nav','cart'],
+  [28.6,9,14.3,6,'t','待付款'],
+  [42.9,9,14.3,6,'t','待发货'],
+  [57.2,9,14.3,6,'t','待收货'],
+  [71.5,9,14.3,6,'t','待评价'],
+  [85.8,9,14.2,6,'t','售后'],
+  [2,17,48,37,'t','博主穿搭笔记（图文）'],
+  [51,17,47,21,'nav','goods'],      // 项链特写 → 商品页
+  [51,39,47,23,'act','playVideo'],
+  [2,56,48,33,'nav','goods'],
+  [51,63,47,28,'t','男生穿搭参考'],
+  ...tabhots()]},
+goods:{img:'goods.png',hot:[
+  [2,1.5,8,4.5,'nav','discover'],
+  [87,1.5,11,5.5,'t','已收藏 ♡'],
+  [2,24,12,37,'act','c:cycle'],     // 左侧色点列（点击循环换色）
+  [5,86.5,12,7,'act','qty:+'],
+  [28,86.5,12,7,'act','qty:-'],
+  [46,86.5,50,7.5,'act','addToCart'],
+  [0,78,100,8,'t','配饰 · 复古巴洛克十字项链 ¥40.00（原价 ¥55.90）'],
+  ]},
+cart:{img:'cart.png',hot:[
+  [2,1.5,8,4.5,'nav','discover'],
+  [88,1.5,10,5.5,'act','cartClear'],
+  [78,24,20,8,'act','cQty:0'],      // 马面裙 x1
+  [78,40,20,8,'act','cQty:1'],      // 项链 x1
+  [78,56,20,8,'act','cQty:2'],      // 大衣 x1
+  [0,88.5,100,11.5,'act','checkout'],
+  ]},
+search:{img:'search.png',hot:[
+  [2,1.5,8,4.5,'nav','discover'],
+  [4,2,76,5.5,'act','searchInput'],
+  [83,2.5,13,5,'t','拍照搜索'],
+  [84,8,14,3,'t','已清除搜索历史'],
+  [2,8,80,4,'act','searchChip'],
+  [2,14,32,30,'nav','goods'],
+  [35,14,32,30,'nav','goods'],
+  [68,14,32,30,'nav','goods'],
+  [2,47,48,48,'nav','goods'],
+  [52,47,48,48,'nav','goods'],
+  ]},
+msg:{img:'msg.png',tab:1,hot:[
+  [2,2.5,30,11,'t','赞和收藏：10 条新消息'],
+  [35,2.5,30,11,'t','评论和@'],
+  [68,2.5,30,11,'act','friendList'],
+  [0,16.5,100,7.5,'act','openChat:兔可可@AI'],
+  [0,24.5,100,7.5,'act','swipe:阿明'],
+  [0,32.5,100,7.5,'act','swipe:灰酱'],
+  [0,40.5,100,7.5,'act','openChat:米妮'],
+  [0,48.5,100,7.5,'act','swipe:群聊1'],
+  [0,57,100,8,'act','swipe:米妮2'],
+  ...tabhots()]},
+chat:{img:'chat.png',hot:[
+  [2,1.5,8,4.5,'nav','msg'],
+  [0,92,100,8,'act','chatInput2'],
+  [55,72,40,20,'t','表情：兔可可比心 🐰'],
+  ]},
+me:{img:'me.png',tab:1,hot:[
+  [87,4,11,5,'t','编辑资料'],
+  [2,26,96,6,'t','收货地址管理'],
+  [2,32,96,6,'t','我的档案：身材数据 / 尺码偏好'],
+  [2,38,96,6,'t','我的喜欢'],
+  [2,44,96,6,'t','我的收藏'],
+  [2,50,96,6,'t','搭配记录'],
+  [2,56,96,6,'t','闲置专卖：旧衣互换 / 二手转卖'],
+  ...tabhots()]},
+video:{img:'video.png',hot:[
+  [2,3,9,5,'nav','discover'],
+  [22,36,58,42,'nav','video2'],     // 点衣服 → 识别
+  [68,88,10,7,'act','like'],
+  [80,88,10,7,'t','已收藏 ⭐'],
+  [91,88,9,7,'t','评论区（128）'],
+  [3,88,14,9,'t','@小鹿的穿搭日记'],
+  ]},
+video2:{img:'video2.png',hot:[
+  [2,3,9,5,'nav','video'],
+  [30,36,20,12,'nav','fitting'],    // AI 衣架 → 试衣间
+  [47,45,18,11,'nav','aichat'],     // 魔棒 → AI搭配
+  [50,58,20,11,'nav','goods'],      // 购物袋 → 同款商品
+  [68,88,10,7,'act','like'],
+  [80,88,10,7,'t','已收藏 ⭐'],
+  [91,88,9,7,'t','评论区'],
+  ]},
+};
+function tabhots(){ // 底部五 Tab（含 Tab 栏页面通用）
+  return [[0,92.5,20,7.5,'nav','home'],[20,92.5,20,7.5,'nav','discover'],
+          [40,92.5,20,7.5,'act','takePhotoTab'],[60,92.5,20,7.5,'nav','msg'],[80,92.5,20,7.5,'nav','me']];
+}
+
+/* ================= 引擎 ================= */
+const vp=document.getElementById('vp');
+let stack=['splash'], dbg=false;
+const state={gender:'',fitSel:new Set(),fitTab:'试单品',wear:5,qty:1,color:2, body:-1,
+  cart:[1,1,1], looks:{}, chatName:'', ranges:[50,50,50,50,50]};
+
+function buildPage(name){
+  const p=PAGES[name], el=document.createElement('div');
+  el.className='page'; el.id='pg-'+name;
+  el.innerHTML=`<div style="position:relative"><img class="bg" src="assets/${p.img}" draggable="false">
+    ${(p.hot||[]).map(h=>`<div class="hz" style="left:${h[0]}%;top:${h[1]}%;width:${h[2]}%;height:${h[3]}%" data-h='${JSON.stringify(h.slice(4))}'></div>`).join('')}
+    <div class="dyn"></div></div>`;
+  el.querySelectorAll('.hz').forEach(z=>z.onclick=e=>{
+    e.stopPropagation(); const [a,arg]=JSON.parse(z.dataset.h); run(a,arg,name);
+  });
+  vp.appendChild(el);
+  if(name==='assist') initSwipe(el);
+  if(name==='avatar2') initRanges(el);
+  return el;
+}
+function goto(name,push=true){
+  if(!document.getElementById('pg-'+name)) buildPage(name);
+  document.querySelectorAll('.page').forEach(e=>e.classList.remove('on'));
+  document.getElementById('pg-'+name).classList.add('on');
+  document.getElementById('pg-'+name).scrollTop=0;
+  // 进入页面时渲染动态覆盖层
+  if(name==='cart') drawCart();
+  if(name==='item') drawWear();
+  if(name==='goods'){ drawQty(); drawColors(); }
+  if(push){ if(stack[stack.length-1]!==name) stack.push(name); }
+}
+function back(){
+  if(stack.length>1){stack.pop(); goto(stack[stack.length-1],false);} else goto('home',false);
+}
+function run(a,arg,page){
+  if(a==='nav') return goto(arg);
+  if(a==='t') return toast(arg);
+  if(a==='act') return ACT[arg.split(':')[0]]?.(arg.split(':')[1],page);
+}
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),2000)}
+function openSheet(html){const s=document.getElementById('sheet');s.innerHTML=html;s.classList.add('show');document.getElementById('mask').classList.add('show')}
+function closeSheet(){document.getElementById('sheet').classList.remove('show');document.getElementById('mask').classList.remove('show')}
+function flash(){const f=document.getElementById('flash');f.classList.remove('go');void f.offsetWidth;f.classList.add('go')}
+function dyn(name){return document.querySelector('#pg-'+name+' .dyn')}
+
+/* ================= 交互动作 ================= */
+const ACT={
+  pickGender(g){ state.gender=g; flash(); toast(`你好呀，${g}生用户 🐰`); setTimeout(()=>goto('home'),450); },
+  pickCat(i,page){ // 衣橱大类
+    toast(`已切换到「${['上装','下装','套装','鞋','包','配饰'][i]}」分类`);
+  },
+  pickSub(i,page){ const subs=['全部','T恤','POLO衫','衬衫','马甲','毛衣/针织','卫衣','西装','牛仔衣','棒球服','夹克','羊羔绒','风衣','大衣','皮衣','罩衫'];
+    const el=dyn('wardrobe'); el.querySelectorAll('.selbox').forEach(e=>e.remove());
+    const b=document.createElement('div'); b.className='selbox';
+    b.style.cssText=`left:2%;top:${12+i*5}%;width:20%;height:4.2%;border-radius:8px`;
+    el.appendChild(b); toast(`筛选：${subs[i]||''}`); },
+  addSheet(){ openSheet(`<h3>添加衣物</h3>
+    <div class="optrow">${['拍照录入（AI抠图）','从相册选择','电商链接导入'].map((o,i)=>`<div class="opt ${i==0?'sel':''}" onclick="toast('${o}')">${o}</div>`).join('')}</div>
+    <button class="btn" onclick="closeSheet();goto('item')">下一步：完善信息</button>
+    <button class="btn ghost" onclick="closeSheet()">取消</button>`); },
+  importTap(){ toast('支持：相机 / 相册 / 小红书 / 淘宝 / 拼多多 / 抖音 一键导入') },
+  editRow(k){ openSheet(`<h3>编辑「${k}」</h3>
+    <input id="edt" style="width:100%;padding:12px;border:1px solid #eee;border-radius:12px;font-size:14px" placeholder="请输入${k}…">
+    <button class="btn" onclick="closeSheet();toast('${k} 已更新 ✅')">保存</button>
+    <button class="btn ghost" onclick="closeSheet()">取消</button>`); },
+  colorSheet(){ goto('itemcolor') },
+  colorTab(t){ toast(`正在选择${t}`) },
+  colorDot(i){ const cols=['红','黑','白','西瓜红','橙','黄','绿','天蓝','深蓝','取色器'];
+    toast(`已选颜色：${cols[i]||'自定义'} ✔`) },
+  colorDone(){ toast('颜色已更新 ✅'); setTimeout(()=>goto('item'),450); },
+  seasonSheet(){ openSheet(`<h3>选择季节</h3>
+    <div class="optrow">${['春','夏','秋','冬'].map((s,i)=>`<div class="opt ${i==0||i==2?'sel':''}" onclick="this.classList.toggle('sel')">${s}</div>`).join('')}</div>
+    <button class="btn" onclick="closeSheet();toast('季节已更新 ✅')">确定</button>`); },
+  wearMinus(){ state.wear=Math.max(0,state.wear-1); drawWear(); },
+  wearCount(){ state.wear++; drawWear(); toast(`穿着次数：${state.wear} 次`); },
+  fitTab(t){ state.fitTab=t;
+    if(t==='试单品') toast('试单品：点击下方衣物选中上身');
+    else toast(`${t}：此页面设计稿未提供，先按试单品流程演示`);
+    drawFitBtn(); },
+  fitCat(i){ toast(`筛选：${['上装','下装','鞋','包','配饰'][i]}`) },
+  fitPick(i,page){ const el=dyn('fitting');
+    if(state.fitSel.has(i)){state.fitSel.delete(i)}else{state.fitSel.add(i)}
+    el.querySelectorAll('.redcheck').forEach(e=>e.remove());
+    state.fitSel.forEach(k=>{ const c=document.createElement('div'); c.className='redcheck'; c.textContent='✓';
+      c.style.cssText=`left:${k%2?79:5}%;top:${k<2?68:83}%`; el.appendChild(c); });
+    drawFitBtn(); },
+  chatInput(){ openSheet(`<h3>和露可说点什么…</h3>
+    <input id="ci" style="width:100%;padding:12px;border:1px solid #eee;border-radius:12px;font-size:14px" placeholder="例如：周末约会穿什么？">
+    <button class="btn" onclick="sendChat()">发送</button>`); },
+  chatInput2(){ openSheet(`<h3>发给 ${state.chatName||'米妮'}</h3>
+    <input id="ci" style="width:100%;padding:12px;border:1px solid #eee;border-radius:12px;font-size:14px" placeholder="输入消息…">
+    <button class="btn" onclick="sendChat2()">发送</button>`); },
+  favLook(n){ if(state.looks[n]){toast(`Look ${n} 已收藏 ⭐`)}else{state.looks[n]=1;toast(`已收藏 Look ${n} ⭐ 魔棒可一键换款`)} },
+  assistKeep(){ heartAt(50,40); toast('已收下这套 look ✅ 换下一套'); setTimeout(nextCard,500); },
+  bodyPick(i){ const el=dyn('avatar'); el.querySelectorAll('.selbox').forEach(e=>e.remove());
+    state.body=i; const b=document.createElement('div'); b.className='selbox';
+    b.style.cssText=`left:${[2,34.5,67][i%3]}%;top:${i<3?54:71}%;width:31%;height:15%`; el.appendChild(b);
+    toast(`选择身形：${['A形','H形','O形','T形','X型','肌肉类型'][i]}`); },
+  avatarDone(){ toast('数字人身材已保存 ✅'); setTimeout(()=>goto('fitting'),500); },
+  takePhoto(){ flash(); toast('AI 识别中…'); setTimeout(()=>{toast('识别成功：米白风衣 · 已自动抠图');setTimeout(()=>goto('item'),600)},800); },
+  takePhotoTab(){ flash(); toast('调起相机…AI 识别中'); setTimeout(()=>{toast('识别成功：米白风衣 · 已自动抠图入库 📸');setTimeout(()=>goto('item'),600)},900); },
+  calPick(i){ toast('已选中日期，点击下方单品记录当天穿搭 📅') },
+  playVideo(){ toast('播放穿搭视频 ▶'); goto('video'); },
+  like(){ heartAt(80,80); toast('点赞 +1 ❤️'); },
+  friendList(){ toast('好友列表（12 位好友）') },
+  openChat(name){ if(name==='米妮'){state.chatName=name;goto('chat')} else toast(`与「${name}」的聊天（演示仅开放米妮）`); },
+  swipe(name,page){ // 模拟左滑：直接弹出操作
+    openSheet(`<h3>「${name}」会话操作</h3>
+    <div class="optrow">
+      <div class="opt" style="background:#f6c344;color:#fff" onclick="closeSheet();toast('会话已隐藏（可设置-找回）')">隐藏</div>
+      <div class="opt" style="background:#F0523F;color:#fff" onclick="delMsg('${name}')">删除</div>
+      <div class="opt" onclick="closeSheet()">取消</div></div>`); },
+  searchInput(){ openSheet(`<h3>搜索</h3>
+    <input id="si" style="width:100%;padding:12px;border:1px solid #eee;border-radius:12px;font-size:14px" placeholder="搜单品 / 风格 / 博主">
+    <button class="btn" onclick="closeSheet();toast('搜索完成，为你找到 128 件相关单品')">搜索</button>`); },
+  searchChip(i){ toast('已填入搜索词') },
+  c(i){ if(i==='cycle'){ state.color=(state.color+1)%4; drawColors();
+      toast(['奶白色','西瓜红','经典黑','葡萄紫'][state.color]+' ✔ 再点可继续换色'); return; }
+    state.color=+i; drawColors(); toast(['奶白色','西瓜红','经典黑','葡萄紫'][state.color]+' ✔'); },
+  qty(op){ state.qty=Math.max(1,state.qty+(op==='+'?1:-1)); drawQty(); },
+  addToCart(){ toast(`已加入购物车 ×${state.qty} 🛒`); setTimeout(()=>goto('cart'),500); },
+  cQty(i){ state.cart[i]++; drawCart(); toast('数量 +1'); },
+  cartClear(){ state.cart=[1,1,1]; drawCart(); toast('购物车已清空（演示重置）'); },
+  checkout(){ const t=392+120*(state.cart[0]-1)+40*(state.cart[1]-1)+220*(state.cart[2]-1)+12;
+    openSheet(`<h3>确认付款</h3><div style="text-align:center;font-size:26px;font-weight:800;color:#F0523F;margin:8px 0">¥ ${t.toFixed(2)}</div>
+    <div style="text-align:center;color:#999;font-size:12px">含运费 ¥12.00 · 支持虚拟试穿后退货</div>
+    <button class="btn" onclick="closeSheet();toast('支付成功！等待发货 📦')">确认支付</button>`); },
+};
+function pickColor(el,i){state.color=i;el.parentElement.querySelectorAll('.cd').forEach(c=>c.classList.remove('sel'));el.classList.add('sel')}
+function sendChat(){
+  const v=document.getElementById('ci')?.value||'明天要去参加面试，帮我选一身衣服'; closeSheet();
+  const el=dyn('aichat'); const b=document.createElement('div'); b.className='bubble me'; b.textContent=v;
+  b.style.top='66%'; el.appendChild(b);
+  setTimeout(()=>{ const a=document.createElement('div'); a.className='bubble ai'; a.textContent='请稍等~露可正在为您精心搭配中…'; a.style.top='73%'; el.appendChild(a);
+    setTimeout(()=>{a.textContent='已为你新搭配 3 套 look ✨ 点击卡片可收藏，或点「随心配」滑卡挑选'; toast('生成完成：3 套新 look ✨')},1200); },900);
+}
+function sendChat2(){
+  const v=document.getElementById('ci')?.value||'喜欢！链接发我～'; closeSheet();
+  const el=dyn('chat'); const b=document.createElement('div'); b.className='bubble me'; b.textContent=v; b.style.top='80%'; el.appendChild(b);
+  setTimeout(()=>{ const a=document.createElement('div'); a.className='bubble ai'; a.textContent='好嘞～拍下后发你穿搭笔记 🐰'; a.style.top='86%'; el.appendChild(a); },1100);
+}
+function delMsg(name){ closeSheet(); toast(`已删除与「${name}」的会话`); }
+function drawWear(){ const el=dyn('item'); el.querySelectorAll('.badge').forEach(e=>e.remove());
+  const b=document.createElement('div'); b.className='badge'; b.style.cssText='left:80%;top:59.5%;background:#fff;color:#333;font-size:14px'; b.textContent=state.wear; el.appendChild(b); }
+function drawFitBtn(){ const el=dyn('fitting'); el.querySelectorAll('.flybtn').forEach(e=>e.remove());
+  if(state.fitSel.size){ const b=document.createElement('button'); b.className='flybtn'; b.textContent=`开始试穿（已选 ${state.fitSel.size} 件）`;
+    b.style.top='90.5%'; b.onclick=()=>{flash();toast('已更新上身效果 ✨ 数字人正在换装…')}; el.appendChild(b); } }
+function drawColors(){ const el=dyn('goods'); if(!el)return;
+  el.querySelectorAll('.selbox').forEach(e=>e.remove());
+  const b=document.createElement('div'); b.className='selbox'; b.style.borderColor='#2D5ED8';
+  b.style.cssText+=`left:2.5%;top:${25.8+state.color*8}%;width:11.5%;height:8.5%;border-radius:50%`;
+  el.appendChild(b); }
+function drawQty(){ const el=dyn('goods'); el.querySelectorAll('.badge').forEach(e=>e.remove());
+  const b=document.createElement('div'); b.className='badge'; b.style.cssText='left:19%;top:88.5%;background:#fff;color:#333'; b.textContent='× '+state.qty; el.appendChild(b); }
+function drawCart(){ const el=dyn('cart'); if(!el)return;
+  el.querySelectorAll('.badge').forEach(e=>e.remove());
+  ['25.5%','41.5%','57.5%'].forEach((t,i)=>{ const b=document.createElement('div'); b.className='badge';
+    b.style.cssText=`left:80%;top:${t};font-size:10.5px;padding:2px 8px;box-shadow:0 1px 4px rgba(0,0,0,.2)`;
+    b.textContent='x'+state.cart[i]; el.appendChild(b); });
+  const total=392+120*(state.cart[0]-1)+40*(state.cart[1]-1)+220*(state.cart[2]-1)+12;
+  const s=document.createElement('div'); s.className='badge'; s.style.cssText='left:56%;top:84%;background:#fff;color:#F0523F;font-size:14px;box-shadow:none';
+  s.textContent='合计 ¥ '+total.toFixed(2); el.appendChild(s); }
+
+/* ---- 随心配：可拖拽卡片 ---- */
+const cardQueue=['assist','goods','video']; let cardIdx=0;
+function initSwipe(root){
+  const p=PAGES.assist, wrap=document.createElement('div');
+  wrap.className='swipewrap';
+  wrap.style.cssText=`left:6.5%;top:12%;width:87%;height:66%;background:#f3e2e2`;
+  setCardFace(wrap, cardQueue[0]);
+  root.querySelector('.dyn').appendChild(wrap);
+  let sx=0,dx=0,drag=false;
+  wrap.addEventListener('pointerdown',e=>{drag=true;sx=e.clientX;wrap.setPointerCapture(e.pointerId)});
+  wrap.addEventListener('pointermove',e=>{if(!drag)return;dx=e.clientX-sx;
+    wrap.style.transform=`translateX(${dx}px) rotate(${dx*.05}deg)`});
+  wrap.addEventListener('pointerup',()=>{drag=false;
+    if(Math.abs(dx)>90){ dx>0?heartAt(55,40):toast('已跳过'); nextCard(); }
+    else wrap.style.transform='';
+    dx=0;});
+}
+function setCardFace(wrap,src){
+  let im=wrap.querySelector('img');
+  if(!im){ im=document.createElement('img'); wrap.appendChild(im); }
+  im.src=`assets/${src}.png`;
+  // 裁出各图中心卡片/主体区域作为卡面（源图 390x844 坐标）
+  const crop={assist:[28,96,335,590],goods:[0,50,390,640],video:[0,100,390,640]}[src];
+  const W=wrap.clientWidth||339, scale=W/crop[2];
+  im.style.width=(390*scale)+'px';
+  im.style.left=(-crop[0]*scale)+'px';
+  im.style.top=(-crop[1]*scale)+'px';
+}
+function nextCard(){ cardIdx=(cardIdx+1)%cardQueue.length;
+  const wrap=document.querySelector('.swipewrap'); if(!wrap)return;
+  wrap.style.transition='none'; wrap.style.transform='translateX(-160%) rotate(-14deg)'; wrap.style.opacity='0';
+  setTimeout(()=>{ setCardFace(wrap,cardQueue[cardIdx]); wrap.style.transform=''; wrap.style.opacity='1';
+    wrap.style.transition='transform .3s,opacity .3s'; },220); }
+function heartAt(x,y){ const sc=document.querySelector('.screen');
+  const h=document.createElement('div'); h.className='heart go'; h.textContent='❤️';
+  h.style.left=x+'%'; h.style.top=y+'%'; sc.appendChild(h); setTimeout(()=>h.remove(),850); }
+
+/* ---- 数字人滑块 ---- */
+function initRanges(root){
+  const labels=['胸围','腰围','臀围','大腿','手臂'], tops=[57.5,64.5,71.5,78.5,85.5];
+  const el=root.querySelector('.dyn');
+  labels.forEach((lb,i)=>{ const r=document.createElement('input');
+    r.type='range'; r.className='range'; r.min=30; r.max=100; r.value=state.ranges[i];
+    r.style.cssText+=`left:22%;top:${tops[i]+1.2}%;width:62%`;
+    r.oninput=()=>{state.ranges[i]=+r.value};
+    r.onchange=()=>toast(`${lb} 已调整：${r.value}`);
+    el.appendChild(r); });
+}
+
+/* debug */
+function toggleDbg(){ dbg=!dbg; document.querySelector('.screen').classList.toggle('debug',dbg);
+  document.getElementById('dbgbtn').classList.toggle('on',dbg); }
+
+// 支持 #home / #home,debug 直接跳转调试
+const _h=location.hash.slice(1).split(',');
+if(_h[0]&&PAGES[_h[0]]){ goto(_h[0]); if(_h[1]==='debug'&&!dbg) toggleDbg(); }
+else goto('splash');
+</script>
+</body>
+</html>
